@@ -25,38 +25,77 @@ export function DatabaseSelector({ selectedDatabase, onDatabaseChange }: Databas
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Load databases from API
+  // Load databases from localStorage and API
   useEffect(() => {
-    const fetchDatabases = async () => {
+    const loadDatabases = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        const response = await fetch("/api/databases")
+        // First, load from localStorage
+        const savedDatabases = localStorage.getItem("firestore-databases")
+        let localDatabases: IDatabase[] = []
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch databases: ${response.statusText}`)
-        }
-
-        const data = await response.json()
-
-        if (data.databases && data.databases.length > 0) {
-          setDatabases(data.databases)
-
-          // If we have an error but still got some databases, show the warning
-          if (data.error) {
-            setError(data.error)
+        if (savedDatabases) {
+          try {
+            const parsed = JSON.parse(savedDatabases)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              localDatabases = parsed
+            }
+          } catch (e) {
+            console.error("Error parsing saved databases:", e)
           }
         }
+
+        // Then try to fetch from API
+        try {
+          const response = await fetch("/api/databases")
+
+          if (response.ok) {
+            const data = await response.json()
+
+            if (data.databases && data.databases.length > 0) {
+              // Merge API databases with local ones, preferring local names
+              const apiDatabases = data.databases
+
+              // Create a map of existing local databases by ID
+              const localDbMap = new Map(localDatabases.map((db) => [db.id, db]))
+
+              // Add API databases that aren't in local storage
+              for (const apiDb of apiDatabases) {
+                if (!localDbMap.has(apiDb.id)) {
+                  localDatabases.push(apiDb)
+                }
+              }
+
+              if (data.error) {
+                setError(data.error)
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching databases from API:", err)
+          // Continue with local databases
+        }
+
+        // Ensure default database is always present
+        if (!localDatabases.some((db) => db.id === "(default)")) {
+          localDatabases.unshift({ id: "(default)", displayName: "Default Database" })
+        }
+
+        setDatabases(localDatabases)
+
+        // Save the merged list back to localStorage
+        localStorage.setItem("firestore-databases", JSON.stringify(localDatabases))
       } catch (err) {
-        console.error("Error fetching databases:", err)
-        setError(err instanceof Error ? err.message : "Failed to fetch databases")
+        console.error("Error loading databases:", err)
+        setError("Failed to load databases. Using default database.")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchDatabases()
+    loadDatabases()
   }, [])
 
   // Add custom database
@@ -69,6 +108,10 @@ export function DatabaseSelector({ selectedDatabase, onDatabaseChange }: Databas
 
       const updatedDatabases = [...databases, newDatabase]
       setDatabases(updatedDatabases)
+
+      // Save to localStorage
+      localStorage.setItem("firestore-databases", JSON.stringify(updatedDatabases))
+
       setNewDatabaseId("")
       setIsAddDialogOpen(false)
 

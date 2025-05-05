@@ -46,12 +46,12 @@ export default function Home() {
       url.searchParams.append("database", selectedDatabase)
 
       const response = await fetch(url.toString())
+      const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch collections: ${response.statusText}`)
+        throw new Error(data.error || `Failed to fetch collections: ${response.statusText}`)
       }
 
-      const data = await response.json()
       setCollections(data.collections)
 
       if (data.collections.length > 0) {
@@ -60,6 +60,7 @@ export default function Home() {
     } catch (err) {
       console.error("Error fetching collections:", err)
       setError(err instanceof Error ? err.message : "Failed to fetch collections")
+      setCollections([])
     } finally {
       setLoading(false)
     }
@@ -78,6 +79,8 @@ export default function Home() {
 
   const handleDatabaseChange = (database: string) => {
     setSelectedDatabase(database)
+    // Reset error when changing database
+    setError(null)
     // When database changes, we should fetch data
     setShouldFetchData(true)
   }
@@ -86,22 +89,9 @@ export default function Home() {
     setShouldFetchData(true)
   }
 
-  if (error) {
-    return (
-      <div className="container mx-auto p-4 max-w-[95%] 2xl:max-w-[90%]">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-        <div className="mt-4">
-          <p className="text-muted-foreground">
-            Please make sure your Firebase service account credentials are properly configured in your environment
-            variables.
-          </p>
-        </div>
-      </div>
-    )
+  const handleRetry = () => {
+    setError(null)
+    setShouldFetchData(true)
   }
 
   return (
@@ -110,6 +100,19 @@ export default function Home() {
         <h1 className="text-3xl font-bold">Firebase Firestore Explorer</h1>
         <DatabaseSelector selectedDatabase={selectedDatabase} onDatabaseChange={handleDatabaseChange} />
       </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>{error}</p>
+            <Button variant="outline" size="sm" className="w-fit" onClick={handleRetry}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="collections">
         <TabsList className="mb-4">
