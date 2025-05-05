@@ -1,0 +1,145 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Plus, Database, Loader2 } from "lucide-react"
+
+interface IDatabase {
+  id: string
+  displayName: string
+}
+
+interface DatabaseSelectorProps {
+  selectedDatabase: string
+  onDatabaseChange: (database: string) => void
+}
+
+export function DatabaseSelector({ selectedDatabase, onDatabaseChange }: DatabaseSelectorProps) {
+  const [databases, setDatabases] = useState<IDatabase[]>([{ id: "(default)", displayName: "Default Database" }])
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [newDatabaseId, setNewDatabaseId] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Load databases from API
+  useEffect(() => {
+    const fetchDatabases = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const response = await fetch("/api/databases")
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch databases: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+
+        if (data.databases && data.databases.length > 0) {
+          setDatabases(data.databases)
+
+          // If we have an error but still got some databases, show the warning
+          if (data.error) {
+            setError(data.error)
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching databases:", err)
+        setError(err instanceof Error ? err.message : "Failed to fetch databases")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDatabases()
+  }, [])
+
+  // Add custom database
+  const handleAddDatabase = () => {
+    if (newDatabaseId && !databases.some((db) => db.id === newDatabaseId)) {
+      const newDatabase = {
+        id: newDatabaseId,
+        displayName: newDatabaseId,
+      }
+
+      const updatedDatabases = [...databases, newDatabase]
+      setDatabases(updatedDatabases)
+      setNewDatabaseId("")
+      setIsAddDialogOpen(false)
+
+      // Select the newly added database
+      onDatabaseChange(newDatabaseId)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Database className="h-4 w-4 text-muted-foreground" />
+        <Select value={selectedDatabase} onValueChange={onDatabaseChange}>
+          <SelectTrigger className="w-[200px]">
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading...</span>
+              </div>
+            ) : (
+              <SelectValue placeholder="Select Database" />
+            )}
+          </SelectTrigger>
+          <SelectContent>
+            {databases.map((db) => (
+              <SelectItem key={db.id} value={db.id}>
+                {db.displayName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button variant="outline" size="icon" onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="h-4 w-4" />
+          <span className="sr-only">Add Database</span>
+        </Button>
+      </div>
+
+      {error && <p className="text-xs text-amber-600 max-w-[300px]">{error}</p>}
+
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Firestore Database</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="databaseId">Database ID</Label>
+              <Input
+                id="databaseId"
+                value={newDatabaseId}
+                onChange={(e) => setNewDatabaseId(e.target.value)}
+                placeholder="Enter database ID"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter the ID of the Firestore database you want to connect to.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddDatabase} disabled={!newDatabaseId}>
+              Add Database
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
