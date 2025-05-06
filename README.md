@@ -1,30 +1,87 @@
-# Firebase firestore client
+# Firebase Firestore Client
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+A web-based client for exploring and managing Firebase Firestore databases and Authentication users.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/kwong70s-projects/v0-firebase-firestore-client)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/jyKrusz5yxn)
+## Features
 
-## Overview
+- View and manage multiple Firestore databases
+- Browse collections and documents
+- Filter and search documents
+- Edit and create documents
+- View and manage Firebase Authentication users
+- Support for multiple tenants
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20 or later
+- Firebase project with Firestore and Authentication enabled
+- Firebase Admin SDK service account key
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   \`\`\`bash
+   npm install
+   \`\`\`
+3. Create a `.env.local` file with your Firebase service account:
+   \`\`\`
+   FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"..."}
+   \`\`\`
+4. Start the development server:
+   \`\`\`bash
+   npm run dev
+   \`\`\`
 
 ## Deployment
 
-Your project is live at:
+This project can be deployed to Vercel:
 
-**[https://vercel.com/kwong70s-projects/v0-firebase-firestore-client](https://vercel.com/kwong70s-projects/v0-firebase-firestore-client)**
+1. Push your code to a Git repository
+2. Import the project in Vercel
+3. Add the `FIREBASE_SERVICE_ACCOUNT` environment variable
+4. Deploy
 
-## Build your app
+## License
 
-Continue building your app on:
+MIT
+\`\`\`
 
-**[https://v0.dev/chat/projects/jyKrusz5yxn](https://v0.dev/chat/projects/jyKrusz5yxn)**
+```gitignore file=".gitignore"
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-## How It Works
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
