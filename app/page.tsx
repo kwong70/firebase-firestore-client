@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import CollectionViewer from "@/components/collection-viewer"
 import DocumentViewer from "@/components/document-viewer"
@@ -47,8 +47,18 @@ export default function Home() {
 
       const url = new URL("/api/collections", window.location.origin)
       url.searchParams.append("database", selectedDatabase)
+      // Add a cache-busting parameter to prevent browser caching
+      url.searchParams.append("_t", Date.now().toString())
 
-      const response = await fetch(url.toString())
+      const response = await fetch(url.toString(), {
+        // Add cache control headers
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      })
+
       const data = await response.json()
 
       if (!response.ok) {
@@ -104,13 +114,28 @@ export default function Home() {
   const handleRetry = () => {
     setError(null)
     setShouldFetchData(true)
+    // Force re-render of collection viewers by changing the key
+    setCollectionViewKey((prev) => prev + 1)
+  }
+
+  const handleRefresh = () => {
+    // Force re-render of collection viewers by changing the key
+    setCollectionViewKey((prev) => prev + 1)
+    // Refetch collections
+    fetchCollections()
   }
 
   return (
     <main className="container mx-auto p-4 max-w-[95%] 2xl:max-w-[90%]">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold">Firebase Firestore Explorer</h1>
-        <DatabaseSelector selectedDatabase={selectedDatabase} onDatabaseChange={handleDatabaseChange} />
+        <div className="flex items-center gap-2">
+          <DatabaseSelector selectedDatabase={selectedDatabase} onDatabaseChange={handleDatabaseChange} />
+          <Button variant="outline" size="icon" onClick={handleRefresh} title="Refresh">
+            <RefreshCw className="h-4 w-4" />
+            <span className="sr-only">Refresh</span>
+          </Button>
+        </div>
       </div>
 
       {error && (

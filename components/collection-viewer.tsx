@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, Loader2 } from "lucide-react"
+import { Search, Loader2, Database } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { EditDocumentModal } from "@/components/edit-document-modal"
 import { FilterPanel, type FilterOptions } from "./filter-panel"
@@ -34,6 +34,7 @@ export default function CollectionViewer({ collectionId, databaseId, autoLoad = 
   const [total, setTotal] = useState(0)
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [dataLoaded, setDataLoaded] = useState(false)
+  const [currentDatabase, setCurrentDatabase] = useState<string>(databaseId)
 
   const [editingDocument, setEditingDocument] = useState<Document | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -55,6 +56,8 @@ export default function CollectionViewer({ collectionId, databaseId, autoLoad = 
       url.searchParams.append("collection", collectionId)
       url.searchParams.append("database", databaseId)
       url.searchParams.append("limit", "50")
+      // Add a cache-busting parameter
+      url.searchParams.append("_t", Date.now().toString())
 
       if (append && lastDocId) {
         url.searchParams.append("lastDocId", lastDocId)
@@ -77,13 +80,25 @@ export default function CollectionViewer({ collectionId, databaseId, autoLoad = 
         }
       }
 
-      const response = await fetch(url.toString())
+      const response = await fetch(url.toString(), {
+        // Add cache control headers
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      })
 
       if (!response.ok) {
         throw new Error(`Failed to fetch documents: ${response.statusText}`)
       }
 
       const data = await response.json()
+
+      // Update current database from response
+      if (data.database) {
+        setCurrentDatabase(data.database)
+      }
 
       if (append) {
         setDocuments((prev) => [...prev, ...data.documents])
@@ -111,6 +126,7 @@ export default function CollectionViewer({ collectionId, databaseId, autoLoad = 
     setFilters(null)
     setDataLoaded(false)
     setError(null)
+    setCurrentDatabase(databaseId)
 
     // Only auto-load if specified
     if (autoLoad) {
@@ -182,6 +198,11 @@ export default function CollectionViewer({ collectionId, databaseId, autoLoad = 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+          <Database className="h-4 w-4" />
+          <span>Database: {currentDatabase === "(default)" ? "Default" : currentDatabase}</span>
+        </div>
+
         <form onSubmit={handleSearch} className="flex justify-between items-center">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />

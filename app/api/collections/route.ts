@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { initializeFirebase, getFirestore } from "@/lib/firebase-admin"
+import { initializeFirebase, getFirestore, clearFirestoreCache } from "@/lib/firebase-admin"
 
 export async function GET(request: Request) {
   try {
@@ -8,8 +8,11 @@ export async function GET(request: Request) {
 
     console.log(`API: Fetching collections for database: ${databaseId}`)
 
+    // Clear cache to ensure we're getting fresh data
+    clearFirestoreCache()
+
     // Initialize Firebase Admin if not already initialized
-    initializeFirebase()
+    initializeFirebase(databaseId)
 
     // Get the specified database
     const db = getFirestore(databaseId)
@@ -20,13 +23,17 @@ export async function GET(request: Request) {
 
       console.log(`API: Found ${collectionIds.length} collections for database: ${databaseId}`)
 
-      return NextResponse.json({ collections: collectionIds })
+      return NextResponse.json({
+        collections: collectionIds,
+        database: databaseId,
+      })
     } catch (error) {
       console.error(`Error listing collections for database ${databaseId}:`, error)
       return NextResponse.json(
         {
           error: `Failed to list collections for database ${databaseId}. The database may not exist or your service account may not have access.`,
           collections: [],
+          database: databaseId,
         },
         { status: 404 },
       )

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { Loader2, Database } from "lucide-react"
 
 interface DocumentViewerProps {
   collectionId: string
@@ -26,6 +26,7 @@ export default function DocumentViewer({ collectionId, databaseId, autoLoad = tr
   const [lastDocId, setLastDocId] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
   const [dataLoaded, setDataLoaded] = useState(false)
+  const [currentDatabase, setCurrentDatabase] = useState<string>(databaseId)
 
   const fetchDocuments = async (append = false) => {
     try {
@@ -44,18 +45,32 @@ export default function DocumentViewer({ collectionId, databaseId, autoLoad = tr
       url.searchParams.append("collection", collectionId)
       url.searchParams.append("database", databaseId)
       url.searchParams.append("limit", "50")
+      // Add a cache-busting parameter
+      url.searchParams.append("_t", Date.now().toString())
 
       if (append && lastDocId) {
         url.searchParams.append("lastDocId", lastDocId)
       }
 
-      const response = await fetch(url.toString())
+      const response = await fetch(url.toString(), {
+        // Add cache control headers
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      })
 
       if (!response.ok) {
         throw new Error(`Failed to fetch documents: ${response.statusText}`)
       }
 
       const data = await response.json()
+
+      // Update current database from response
+      if (data.database) {
+        setCurrentDatabase(data.database)
+      }
 
       if (append) {
         setDocuments((prev) => [...prev, ...data.documents])
@@ -82,6 +97,7 @@ export default function DocumentViewer({ collectionId, databaseId, autoLoad = tr
     setLastDocId(null)
     setDataLoaded(false)
     setError(null)
+    setCurrentDatabase(databaseId)
 
     // Only auto-load if specified
     if (autoLoad) {
@@ -124,6 +140,11 @@ export default function DocumentViewer({ collectionId, databaseId, autoLoad = tr
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+        <Database className="h-4 w-4" />
+        <span>Database: {currentDatabase === "(default)" ? "Default" : currentDatabase}</span>
+      </div>
+
       <div className="bg-muted p-4 rounded-md overflow-x-auto">
         <pre className="text-sm">{JSON.stringify(documents, null, 2)}</pre>
       </div>
