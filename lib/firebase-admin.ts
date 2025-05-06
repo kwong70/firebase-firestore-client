@@ -1,6 +1,7 @@
 import admin from "firebase-admin"
 
-let firebaseApp: admin.app.App
+// Store initialized database instances
+const databaseInstances: Record<string, admin.firestore.Firestore> = {}
 
 export function initializeFirebase() {
   if (!admin.apps.length) {
@@ -25,7 +26,7 @@ export function initializeFirebase() {
         )
       }
 
-      firebaseApp = admin.initializeApp({
+      admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       })
 
@@ -34,30 +35,56 @@ export function initializeFirebase() {
       console.error("Error initializing Firebase Admin:", error)
       throw error
     }
-  } else {
-    firebaseApp = admin.app()
   }
 
-  return firebaseApp
+  return admin.app()
 }
 
 export function getFirestore(databaseId?: string) {
+  // Initialize Firebase Admin if not already initialized
   initializeFirebase()
 
+  // Normalize database ID
+  const normalizedDbId = databaseId && databaseId !== "(default)" ? databaseId : "(default)"
+
+  // Check if we already have this database instance
+  if (databaseInstances[normalizedDbId]) {
+    return databaseInstances[normalizedDbId]
+  }
+
   try {
-    // Only use the database() method if we have a non-default database ID
-    // The special "(default)" ID should use the default database
-    if (databaseId && databaseId !== "(default)") {
-      console.log(`Using non-default database: ${databaseId}`)
-      return admin.firestore().database(`(${databaseId})`)
+    let firestoreInstance: admin.firestore.Firestore
+
+    if (normalizedDbId === "(default)") {
+      // Use default database
+      console.log("Using default Firestore database")
+      firestoreInstance = admin.firestore()
+    } else {
+      // Use specified database
+      console.log(`Using Firestore database: ${normalizedDbId}`)
+
+      // Create Firestore with the specific database
+      const options: admin.firestore.Settings = {
+        databaseId: normalizedDbId,
+      }
+
+      firestoreInstance = admin.firestore()
+      firestoreInstance.settings(options)
     }
 
-    console.log("Using default database")
-    return admin.firestore()
+    // Cache the instance
+    databaseInstances[normalizedDbId] = firestoreInstance
+    return firestoreInstance
   } catch (error) {
-    console.error(`Error getting Firestore database (${databaseId}):`, error)
-    // Fall back to default database
-    console.log("Falling back to default database due to error")
-    return admin.firestore()
+    console.error(`Error getting Firestore database (${normalizedDbId}):`, error)
+
+    // If we failed with a non-default database, try falling back to default
+    if (normalizedDbId !== "(default)") {
+      console.log("Falling back to default database due to error")
+      return getFirestore("(default)")
+    }
+
+    // If we're already trying to get the default database and it failed, rethrow
+    throw error
   }
 }
