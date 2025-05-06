@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, RefreshCw } from "lucide-react"
+import { AlertCircle, RefreshCw, Database } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import CollectionViewer from "@/components/collection-viewer"
 import DocumentViewer from "@/components/document-viewer"
@@ -20,6 +20,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [shouldFetchData, setShouldFetchData] = useState(false)
   const [collectionViewKey, setCollectionViewKey] = useState(0)
+  const [responseDatabase, setResponseDatabase] = useState<string | null>(null)
 
   // Load selected database from localStorage
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function Home() {
       setError(null)
       setCollections([])
       setSelectedCollection(null)
+      setResponseDatabase(null)
 
       console.log(`UI: Fetching collections for database: ${selectedDatabase}`)
 
@@ -65,7 +67,12 @@ export default function Home() {
         throw new Error(data.error || `Failed to fetch collections: ${response.statusText}`)
       }
 
-      console.log(`UI: Received ${data.collections.length} collections for database: ${selectedDatabase}`)
+      // Store the database ID from the response for debugging
+      setResponseDatabase(data.database || null)
+
+      console.log(
+        `UI: Received ${data.collections.length} collections for database: ${data.database || selectedDatabase}`,
+      )
       setCollections(data.collections)
 
       if (data.collections.length > 0) {
@@ -135,6 +142,19 @@ export default function Home() {
             <RefreshCw className="h-4 w-4" />
             <span className="sr-only">Refresh</span>
           </Button>
+        </div>
+      </div>
+
+      {/* Debug info */}
+      <div className="mb-4 p-2 bg-muted/30 rounded-md">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Database className="h-4 w-4" />
+          <span>Selected Database: {selectedDatabase === "(default)" ? "Default" : selectedDatabase}</span>
+          {responseDatabase && responseDatabase !== selectedDatabase && (
+            <span className="text-amber-600">
+              (Warning: Response from database: {responseDatabase === "(default)" ? "Default" : responseDatabase})
+            </span>
+          )}
         </div>
       </div>
 

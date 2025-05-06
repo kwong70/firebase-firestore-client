@@ -1,8 +1,13 @@
 import admin from "firebase-admin"
 
-// Initialize Firebase Admin once
+// Store initialized app instances
+const appInstances: Record<string, admin.app.App> = {}
+// Store initialized database instances
+const databaseInstances: Record<string, admin.firestore.Firestore> = {}
+
+// Initialize the main Firebase app if not already initialized
 export function initializeFirebase() {
-  if (!admin.apps.length) {
+  if (admin.apps.length === 0) {
     try {
       // Check if we have the service account credentials
       if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -43,40 +48,45 @@ export function getFirestore(databaseId?: string) {
   // Normalize database ID
   const normalizedDbId = databaseId && databaseId !== "(default)" ? databaseId : "(default)"
 
+  // Use as cache key
+  const cacheKey = normalizedDbId
+
+  // Check if we already have this database instance
+  if (databaseInstances[cacheKey]) {
+    console.log(`Using cached Firestore instance for database: ${normalizedDbId}`)
+    return databaseInstances[cacheKey]
+  }
+
   try {
-    // Make sure Firebase is initialized
+    // Initialize the main Firebase app if not already initialized
     initializeFirebase()
 
-    // Get a fresh Firestore instance
+    // Get the Firestore instance
     const firestoreInstance = admin.firestore()
 
-    // Configure for non-default database if needed
+    // If it's not the default database, configure it with the specific database ID
     if (normalizedDbId !== "(default)") {
+      console.log(`Configuring Firestore for database: ${normalizedDbId}`)
       firestoreInstance.settings({
         databaseId: normalizedDbId,
       })
-      console.log(`Created Firestore instance for database: ${normalizedDbId}`)
     } else {
-      console.log("Created Firestore instance for default database")
+      console.log("Using default Firestore database")
     }
 
+    // Cache the instance
+    databaseInstances[cacheKey] = firestoreInstance
     return firestoreInstance
   } catch (error) {
     console.error(`Error getting Firestore database (${normalizedDbId}):`, error)
-
-    // If we failed with a non-default database, try falling back to default
-    if (normalizedDbId !== "(default)") {
-      console.log("Falling back to default database due to error")
-      return getFirestore("(default)")
-    }
-
-    // If we're already trying to get the default database and it failed, rethrow
     throw error
   }
 }
 
-// This function is no longer needed but kept for backward compatibility
+// Clear all cached database instances
 export function clearFirestoreCache() {
-  console.log("Cache clearing not needed - no cache is used")
-  return
+  console.log("Clearing Firestore cache")
+  Object.keys(databaseInstances).forEach((key) => {
+    delete databaseInstances[key]
+  })
 }

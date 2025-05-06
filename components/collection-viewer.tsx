@@ -80,6 +80,8 @@ export default function CollectionViewer({ collectionId, databaseId, autoLoad = 
         }
       }
 
+      console.log(`CollectionViewer: Fetching documents for collection: ${collectionId} in database: ${databaseId}`)
+
       const response = await fetch(url.toString(), {
         // Add cache control headers
         headers: {
@@ -98,6 +100,7 @@ export default function CollectionViewer({ collectionId, databaseId, autoLoad = 
       // Update current database from response
       if (data.database) {
         setCurrentDatabase(data.database)
+        console.log(`CollectionViewer: Response from database: ${data.database}`)
       }
 
       if (append) {
@@ -201,6 +204,11 @@ export default function CollectionViewer({ collectionId, databaseId, autoLoad = 
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
           <Database className="h-4 w-4" />
           <span>Database: {currentDatabase === "(default)" ? "Default" : currentDatabase}</span>
+          {currentDatabase !== databaseId && (
+            <span className="text-amber-600">
+              (Warning: Expected {databaseId === "(default)" ? "Default" : databaseId})
+            </span>
+          )}
         </div>
 
         <form onSubmit={handleSearch} className="flex justify-between items-center">

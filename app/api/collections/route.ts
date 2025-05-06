@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { initializeFirebase, getFirestore } from "@/lib/firebase-admin"
+import { initializeFirebase, getFirestore, clearFirestoreCache } from "@/lib/firebase-admin"
 
 export async function GET(request: Request) {
   try {
@@ -8,6 +8,9 @@ export async function GET(request: Request) {
 
     console.log(`API: Fetching collections for database: ${databaseId}`)
 
+    // Clear cache to ensure we're getting fresh data
+    clearFirestoreCache()
+
     // Initialize Firebase Admin if not already initialized
     initializeFirebase()
 
@@ -15,15 +18,26 @@ export async function GET(request: Request) {
     const db = getFirestore(databaseId)
 
     try {
+      // Force a new request to Firestore
       const collections = await db.listCollections()
       const collectionIds = collections.map((collection) => collection.id)
 
       console.log(`API: Found ${collectionIds.length} collections for database: ${databaseId}`)
 
-      return NextResponse.json({
-        collections: collectionIds,
-        database: databaseId,
-      })
+      return NextResponse.json(
+        {
+          collections: collectionIds,
+          database: databaseId,
+        },
+        {
+          headers: {
+            // Prevent caching
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        },
+      )
     } catch (error) {
       console.error(`Error listing collections for database ${databaseId}:`, error)
       return NextResponse.json(

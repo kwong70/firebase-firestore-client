@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type admin from "firebase-admin"
-import { initializeFirebase, getFirestore } from "@/lib/firebase-admin"
+import { initializeFirebase, getFirestore, clearFirestoreCache } from "@/lib/firebase-admin"
 
 export async function GET(request: Request) {
   try {
@@ -23,6 +23,9 @@ export async function GET(request: Request) {
     if (!collectionId) {
       return NextResponse.json({ error: "Collection ID is required" }, { status: 400 })
     }
+
+    // Clear cache to ensure we're getting fresh data
+    clearFirestoreCache()
 
     // Initialize Firebase Admin if not already initialized
     initializeFirebase()
@@ -129,13 +132,23 @@ export async function GET(request: Request) {
     // Determine if there are more documents to load
     const hasMore = documents.length === limit && documents.length < total
 
-    return NextResponse.json({
-      documents,
-      total,
-      hasMore,
-      lastDocId: documents.length > 0 ? documents[documents.length - 1].id : null,
-      database: databaseId,
-    })
+    return NextResponse.json(
+      {
+        documents,
+        total,
+        hasMore,
+        lastDocId: documents.length > 0 ? documents[documents.length - 1].id : null,
+        database: databaseId,
+      },
+      {
+        headers: {
+          // Prevent caching
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      },
+    )
   } catch (error) {
     console.error("Error fetching documents:", error)
     return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 })
@@ -156,6 +169,9 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const { id, data } = body
+
+    // Clear cache to ensure we're getting fresh data
+    clearFirestoreCache()
 
     // Initialize Firebase Admin if not already initialized
     initializeFirebase()
