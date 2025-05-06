@@ -101,9 +101,12 @@ export function DatabaseSelector({ selectedDatabase, onDatabaseChange }: Databas
   // Add custom database
   const handleAddDatabase = () => {
     if (newDatabaseId && !databases.some((db) => db.id === newDatabaseId)) {
+      // Remove any parentheses from the database ID to ensure consistent format
+      const cleanId = newDatabaseId.replace(/[()]/g, "")
+
       const newDatabase = {
-        id: newDatabaseId,
-        displayName: newDatabaseId,
+        id: cleanId,
+        displayName: cleanId,
       }
 
       const updatedDatabases = [...databases, newDatabase]
@@ -116,7 +119,7 @@ export function DatabaseSelector({ selectedDatabase, onDatabaseChange }: Databas
       setIsAddDialogOpen(false)
 
       // Select the newly added database
-      onDatabaseChange(newDatabaseId)
+      onDatabaseChange(cleanId)
     }
   }
 
@@ -168,7 +171,7 @@ export function DatabaseSelector({ selectedDatabase, onDatabaseChange }: Databas
                 placeholder="Enter database ID"
               />
               <p className="text-xs text-muted-foreground">
-                Enter the ID of the Firestore database you want to connect to.
+                Enter the ID of the Firestore database you want to connect to. Do not include parentheses.
               </p>
             </div>
           </div>

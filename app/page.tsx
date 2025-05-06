@@ -19,6 +19,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [shouldFetchData, setShouldFetchData] = useState(false)
+  const [collectionViewKey, setCollectionViewKey] = useState(0)
 
   // Load selected database from localStorage
   useEffect(() => {
@@ -42,6 +43,8 @@ export default function Home() {
       setCollections([])
       setSelectedCollection(null)
 
+      console.log(`UI: Fetching collections for database: ${selectedDatabase}`)
+
       const url = new URL("/api/collections", window.location.origin)
       url.searchParams.append("database", selectedDatabase)
 
@@ -52,6 +55,7 @@ export default function Home() {
         throw new Error(data.error || `Failed to fetch collections: ${response.statusText}`)
       }
 
+      console.log(`UI: Received ${data.collections.length} collections for database: ${selectedDatabase}`)
       setCollections(data.collections)
 
       if (data.collections.length > 0) {
@@ -75,12 +79,20 @@ export default function Home() {
 
   const handleCollectionSelect = (collection: string) => {
     setSelectedCollection(collection)
+    // Force re-render of collection viewers by changing the key
+    setCollectionViewKey((prev) => prev + 1)
   }
 
   const handleDatabaseChange = (database: string) => {
+    console.log(`UI: Database changed to: ${database}`)
     setSelectedDatabase(database)
     // Reset error when changing database
     setError(null)
+    // Reset collections
+    setCollections([])
+    setSelectedCollection(null)
+    // Force re-render of collection viewers by changing the key
+    setCollectionViewKey((prev) => prev + 1)
     // When database changes, we should fetch data
     setShouldFetchData(true)
   }
@@ -165,6 +177,11 @@ export default function Home() {
                 <CardTitle>
                   {selectedCollection ? `Collection: ${selectedCollection}` : "Select a collection"}
                 </CardTitle>
+                {selectedCollection && (
+                  <CardDescription>
+                    Database: {selectedDatabase === "(default)" ? "Default" : selectedDatabase}
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent>
                 {!shouldFetchData ? (
@@ -187,7 +204,7 @@ export default function Home() {
                         collectionId={selectedCollection}
                         databaseId={selectedDatabase}
                         autoLoad={false}
-                        key={`${selectedDatabase}-${selectedCollection}`}
+                        key={`table-${collectionViewKey}-${selectedDatabase}-${selectedCollection}`}
                       />
                     </TabsContent>
                     <TabsContent value="json">
@@ -195,7 +212,7 @@ export default function Home() {
                         collectionId={selectedCollection}
                         databaseId={selectedDatabase}
                         autoLoad={false}
-                        key={`${selectedDatabase}-${selectedCollection}`}
+                        key={`json-${collectionViewKey}-${selectedDatabase}-${selectedCollection}`}
                       />
                     </TabsContent>
                   </Tabs>

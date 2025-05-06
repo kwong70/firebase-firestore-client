@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const collectionId = searchParams.get("collection")
-    const databaseId = searchParams.get("database") || "default"
+    const databaseId = searchParams.get("database") || "(default)"
     const limitStr = searchParams.get("limit") || "50"
     const lastDocId = searchParams.get("lastDocId")
     const searchTerm = searchParams.get("search")
@@ -15,6 +15,8 @@ export async function GET(request: Request) {
     const filterOperator = searchParams.get("filterOperator") || "=="
     const orderByField = searchParams.get("orderBy")
     const orderDirection = searchParams.get("orderDirection") || "asc"
+
+    console.log(`API: Fetching documents for collection: ${collectionId} in database: ${databaseId}`)
 
     const limit = Number.parseInt(limitStr, 10)
 
@@ -102,6 +104,8 @@ export async function GET(request: Request) {
       data: doc.data(),
     }))
 
+    console.log(`API: Found ${documents.length} documents for collection: ${collectionId} in database: ${databaseId}`)
+
     // Apply client-side search if search term is provided
     if (searchTerm) {
       const searchTermLower = searchTerm.toLowerCase()
@@ -141,7 +145,9 @@ export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const collectionId = searchParams.get("collection")
-    const databaseId = searchParams.get("database") || "default"
+    const databaseId = searchParams.get("database") || "(default)"
+
+    console.log(`API: Creating document in collection: ${collectionId} in database: ${databaseId}`)
 
     if (!collectionId) {
       return NextResponse.json({ error: "Collection ID is required" }, { status: 400 })

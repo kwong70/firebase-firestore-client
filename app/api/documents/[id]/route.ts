@@ -6,7 +6,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const id = params.id
     const { searchParams } = new URL(request.url)
     const collectionId = searchParams.get("collection")
-    const databaseId = searchParams.get("database") || "default"
+    const databaseId = searchParams.get("database") || "(default)"
+
+    console.log(`API: Updating document ${id} in collection: ${collectionId} in database: ${databaseId}`)
 
     if (!collectionId) {
       return NextResponse.json({ error: "Collection ID is required" }, { status: 400 })
@@ -40,7 +42,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const id = params.id
     const { searchParams } = new URL(request.url)
     const collectionId = searchParams.get("collection")
-    const databaseId = searchParams.get("database") || "default"
+    const databaseId = searchParams.get("database") || "(default)"
+
+    console.log(`API: Deleting document ${id} in collection: ${collectionId} in database: ${databaseId}`)
 
     if (!collectionId) {
       return NextResponse.json({ error: "Collection ID is required" }, { status: 400 })

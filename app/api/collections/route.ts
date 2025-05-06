@@ -6,6 +6,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const databaseId = searchParams.get("database") || "(default)"
 
+    console.log(`API: Fetching collections for database: ${databaseId}`)
+
     // Initialize Firebase Admin if not already initialized
     initializeFirebase()
 
@@ -15,6 +17,8 @@ export async function GET(request: Request) {
     try {
       const collections = await db.listCollections()
       const collectionIds = collections.map((collection) => collection.id)
+
+      console.log(`API: Found ${collectionIds.length} collections for database: ${databaseId}`)
 
       return NextResponse.json({ collections: collectionIds })
     } catch (error) {

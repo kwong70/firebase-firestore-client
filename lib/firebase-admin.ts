@@ -45,13 +45,19 @@ export function getFirestore(databaseId?: string) {
   initializeFirebase()
 
   try {
+    // Only use the database() method if we have a non-default database ID
+    // The special "(default)" ID should use the default database
     if (databaseId && databaseId !== "(default)") {
-      return admin.firestore().database(databaseId)
+      console.log(`Using non-default database: ${databaseId}`)
+      return admin.firestore().database(`(${databaseId})`)
     }
+
+    console.log("Using default database")
     return admin.firestore()
   } catch (error) {
     console.error(`Error getting Firestore database (${databaseId}):`, error)
     // Fall back to default database
+    console.log("Falling back to default database due to error")
     return admin.firestore()
   }
 }
