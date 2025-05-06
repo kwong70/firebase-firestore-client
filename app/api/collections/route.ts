@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { initializeFirebase, getFirestore, clearFirestoreCache } from "@/lib/firebase-admin"
+import { initializeFirebase, getFirestore } from "@/lib/firebase-admin"
 
 export async function GET(request: Request) {
   try {
@@ -8,11 +8,8 @@ export async function GET(request: Request) {
 
     console.log(`API: Fetching collections for database: ${databaseId}`)
 
-    // Clear cache to ensure we're getting fresh data
-    clearFirestoreCache()
-
     // Initialize Firebase Admin if not already initialized
-    initializeFirebase(databaseId)
+    initializeFirebase()
 
     // Get the specified database
     const db = getFirestore(databaseId)

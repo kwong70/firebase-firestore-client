@@ -1,103 +1,65 @@
 import admin from "firebase-admin"
 
-// Store initialized app instances
-const appInstances: Record<string, admin.app.App> = {}
-// Store initialized database instances
-const databaseInstances: Record<string, admin.firestore.Firestore> = {}
-
-export function initializeFirebase(databaseId?: string) {
-  // Normalize database ID for use as a key
-  const appName = databaseId && databaseId !== "(default)" ? `app-${databaseId}` : "default"
-
-  // Check if we already have an app instance for this database
-  if (appInstances[appName]) {
-    return appInstances[appName]
-  }
-
-  try {
-    // Check if we have the service account credentials
-    if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
-      throw new Error("FIREBASE_SERVICE_ACCOUNT environment variable is not set")
-    }
-
-    // Parse the service account JSON
-    let serviceAccount
+// Initialize Firebase Admin once
+export function initializeFirebase() {
+  if (!admin.apps.length) {
     try {
-      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-    } catch (e) {
-      throw new Error("Failed to parse FIREBASE_SERVICE_ACCOUNT. Make sure it's valid JSON.")
+      // Check if we have the service account credentials
+      if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+        throw new Error("FIREBASE_SERVICE_ACCOUNT environment variable is not set")
+      }
+
+      // Parse the service account JSON
+      let serviceAccount
+      try {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+      } catch (e) {
+        throw new Error("Failed to parse FIREBASE_SERVICE_ACCOUNT. Make sure it's valid JSON.")
+      }
+
+      // Check for required fields in service account
+      if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+        throw new Error(
+          "FIREBASE_SERVICE_ACCOUNT is missing required fields (project_id, private_key, or client_email)",
+        )
+      }
+
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      })
+
+      console.log("Firebase Admin initialized successfully")
+    } catch (error) {
+      console.error("Error initializing Firebase Admin:", error)
+      throw error
     }
-
-    // Check for required fields in service account
-    if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
-      throw new Error("FIREBASE_SERVICE_ACCOUNT is missing required fields (project_id, private_key, or client_email)")
-    }
-
-    // Initialize a new app instance with a unique name
-    let app: admin.app.App
-
-    if (appName === "default" && admin.apps.length > 0) {
-      // Use the default app if it exists
-      app = admin.app()
-    } else {
-      // Create a new app instance with the specified name
-      app = admin.initializeApp(
-        {
-          credential: admin.credential.cert(serviceAccount),
-        },
-        appName,
-      )
-    }
-
-    // Store the app instance
-    appInstances[appName] = app
-
-    console.log(`Firebase Admin initialized successfully for ${appName}`)
-    return app
-  } catch (error) {
-    console.error(`Error initializing Firebase Admin for ${appName}:`, error)
-    throw error
   }
+
+  return admin.app()
 }
 
+// Get a Firestore instance for a specific database
 export function getFirestore(databaseId?: string) {
   // Normalize database ID
   const normalizedDbId = databaseId && databaseId !== "(default)" ? databaseId : "(default)"
 
-  // Use as cache key
-  const cacheKey = normalizedDbId
-
-  // Check if we already have this database instance
-  if (databaseInstances[cacheKey]) {
-    console.log(`Using cached Firestore instance for database: ${normalizedDbId}`)
-    return databaseInstances[cacheKey]
-  }
-
   try {
-    // Initialize the appropriate Firebase app
-    const app = initializeFirebase(normalizedDbId)
+    // Make sure Firebase is initialized
+    initializeFirebase()
 
-    let firestoreInstance: admin.firestore.Firestore
+    // Get a fresh Firestore instance
+    const firestoreInstance = admin.firestore()
 
-    if (normalizedDbId === "(default)") {
-      // Use default database
-      console.log("Initializing default Firestore database")
-      firestoreInstance = admin.firestore(app)
-    } else {
-      // Use specified database
-      console.log(`Initializing Firestore database: ${normalizedDbId}`)
-
-      // Create Firestore with the specific database
-      firestoreInstance = admin.firestore(app)
-
-      // Configure for the specific database
+    // Configure for non-default database if needed
+    if (normalizedDbId !== "(default)") {
       firestoreInstance.settings({
         databaseId: normalizedDbId,
       })
+      console.log(`Created Firestore instance for database: ${normalizedDbId}`)
+    } else {
+      console.log("Created Firestore instance for default database")
     }
 
-    // Cache the instance
-    databaseInstances[cacheKey] = firestoreInstance
     return firestoreInstance
   } catch (error) {
     console.error(`Error getting Firestore database (${normalizedDbId}):`, error)
@@ -113,9 +75,8 @@ export function getFirestore(databaseId?: string) {
   }
 }
 
-// Clear all cached instances - useful for testing
+// This function is no longer needed but kept for backward compatibility
 export function clearFirestoreCache() {
-  Object.keys(databaseInstances).forEach((key) => {
-    delete databaseInstances[key]
-  })
+  console.log("Cache clearing not needed - no cache is used")
+  return
 }

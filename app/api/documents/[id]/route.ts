@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { initializeFirebase, getFirestore, clearFirestoreCache } from "@/lib/firebase-admin"
+import { initializeFirebase, getFirestore } from "@/lib/firebase-admin"
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -17,11 +17,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const body = await request.json()
     const { data } = body
 
-    // Clear cache to ensure we're getting fresh data
-    clearFirestoreCache()
-
     // Initialize Firebase Admin if not already initialized
-    initializeFirebase(databaseId)
+    initializeFirebase()
 
     // Get the specified database
     const db = getFirestore(databaseId)
@@ -54,11 +51,8 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       return NextResponse.json({ error: "Collection ID is required" }, { status: 400 })
     }
 
-    // Clear cache to ensure we're getting fresh data
-    clearFirestoreCache()
-
     // Initialize Firebase Admin if not already initialized
-    initializeFirebase(databaseId)
+    initializeFirebase()
 
     // Get the specified database
     const db = getFirestore(databaseId)

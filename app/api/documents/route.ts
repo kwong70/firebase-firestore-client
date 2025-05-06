@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type admin from "firebase-admin"
-import { initializeFirebase, getFirestore, clearFirestoreCache } from "@/lib/firebase-admin"
+import { initializeFirebase, getFirestore } from "@/lib/firebase-admin"
 
 export async function GET(request: Request) {
   try {
@@ -24,11 +24,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Collection ID is required" }, { status: 400 })
     }
 
-    // Clear cache to ensure we're getting fresh data
-    clearFirestoreCache()
-
     // Initialize Firebase Admin if not already initialized
-    initializeFirebase(databaseId)
+    initializeFirebase()
 
     // Get the specified database
     const db = getFirestore(databaseId)
@@ -160,11 +157,8 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { id, data } = body
 
-    // Clear cache to ensure we're getting fresh data
-    clearFirestoreCache()
-
     // Initialize Firebase Admin if not already initialized
-    initializeFirebase(databaseId)
+    initializeFirebase()
 
     // Get the specified database
     const db = getFirestore(databaseId)
