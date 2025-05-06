@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     clearFirestoreCache()
 
     // Initialize Firebase Admin if not already initialized
-    initializeFirebase()
+    initializeFirebase(databaseId)
 
     // Get the specified database
     const db = getFirestore(databaseId)
