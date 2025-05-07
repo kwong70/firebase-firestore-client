@@ -62,7 +62,7 @@ export function getFirestore(databaseId: string = '(default)') {
   // Check if we already have this database instance
   if (databaseInstances[cacheKey]) {
     console.log(
-      `Using cached Firestore instance for database: ${normalizedDbId}`
+      `Using cached Firestore instance for database: ${cacheKey}`
     );
     return databaseInstances[cacheKey];
   }
