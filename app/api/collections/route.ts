@@ -8,9 +8,6 @@ export async function GET(request: Request) {
 
     console.log(`API: Fetching collections for database: ${databaseId}`)
 
-    // Clear cache to ensure we're getting fresh data
-    clearFirestoreCache()
-
     // Initialize Firebase Admin if not already initialized
     initializeFirebase()
 
