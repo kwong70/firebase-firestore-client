@@ -1,10 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
-  experimental: {
-    serverComponentsExternalPackages: ["firebase-admin"],
-  },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -16,4 +11,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+export default nextConfig
